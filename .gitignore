@@ -9,3 +9,4 @@ weights/
 *.safetensors
 *.egg-info*
 llm-models/*
+IMPLEMENTATION_GUIDE.md

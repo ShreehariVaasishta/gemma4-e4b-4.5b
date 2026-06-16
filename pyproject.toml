@@ -1,0 +1,31 @@
+[project]
+name = "gemma4-e4b-inference"
+version = "0.1.0"
+description = "From-scratch inference implementation for Gemma 4 E4B (4.5B effective parameters)"
+requires-python = ">=3.11"
+readme = "README.md"
+license = {text = "Apache-2.0"}
+
+dependencies = [
+    "torch>=2.5.0",
+    "safetensors>=0.4.0",
+    "tokenizers>=0.20.0",
+    "huggingface-hub>=0.25.0",
+    "numpy",
+]
+
+[project.optional-dependencies]
+dev = [
+    "transformers>=4.50.0",    # only for comparison / validation
+    "ruff",
+]
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["gemma4*"]
+
+[tool.ruff]
+line-length = 120

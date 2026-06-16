@@ -1,0 +1,24 @@
+services:
+  gemma4:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: gemma4-e4b:latest
+    container_name: gemma4-e4b-dev
+    # Mount source for hot-reloading (editable install)
+    volumes:
+      - .:/app
+      - ~/.cache/huggingface:/root/.cache/huggingface
+    # NVIDIA GPU access
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      - CUDA_HOME=/usr/local/cuda
+      - TRANSFORMERS_VERBOSITY=error
+    # Keep alive for interactive use
+    command: ["tail", "-f", "/dev/null"]

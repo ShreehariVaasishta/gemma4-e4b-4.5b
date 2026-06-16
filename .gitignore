@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.egg-info/
+*.pyc
+*.so
+build/
+dist/
+weights/
+*.safetensors
+*.egg-info*
+llm-models/*

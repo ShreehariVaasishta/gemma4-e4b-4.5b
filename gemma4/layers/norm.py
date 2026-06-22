@@ -7,6 +7,7 @@ Gemma uses RMSNorm with learnable scale (weight), adding +1 offset internally
 
 import torch
 import torch.nn as nn
+import gemma4_kernels
 
 
 class RMSNorm(nn.Module):
@@ -22,8 +23,7 @@ class RMSNorm(nn.Module):
         return x * torch.rsqrt(x.float().pow(2).mean(-1, keepdim=True) + self.eps)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        normed = self._norm(x.float())
-        # The HF checkpoint weights are already absolute multipliers
-        if self.with_scale:
-            normed = normed * self.weight.float()
+        # Pass self.weight if with_scale is True, otherwise pass None
+        weight = self.weight if self.with_scale else None
+        normed = gemma4_kernels.rms_norm(x, self.eps, weight)
         return normed.type_as(x)

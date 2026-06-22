@@ -12,6 +12,7 @@ dependencies = [
     "tokenizers>=0.20.0",
     "huggingface-hub>=0.25.0",
     "numpy",
+    "ninja>=1.13.0",
 ]
 
 [project.optional-dependencies]
@@ -21,7 +22,7 @@ dev = [
 ]
 
 [build-system]
-requires = ["setuptools>=68.0"]
+requires = ["setuptools>=68.0", "wheel", "torch>=2.5.0", "ninja>=1.13.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
@@ -29,3 +30,14 @@ include = ["gemma4*"]
 
 [tool.ruff]
 line-length = 120
+
+# ── uv: install PyTorch from the CUDA 13.2 index ────────────────────
+# This ensures PyTorch matches your system nvcc (CUDA 13.3).
+# cu132 is the closest available build to system CUDA 13.3.
+[[tool.uv.index]]
+name = "pytorch-cu132"
+url = "https://download.pytorch.org/whl/cu132"
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu132" }
+

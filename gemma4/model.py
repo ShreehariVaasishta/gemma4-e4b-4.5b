@@ -10,6 +10,7 @@ Key architectural features:
 """
 
 from __future__ import annotations
+import time
 
 import math
 from typing import Optional
@@ -315,7 +316,6 @@ class Gemma4ForCausalLM(nn.Module):
         self.model = Gemma4TextModel(config)
 
         # LM head — tied with embed_tokens if tie_word_embeddings
-        print(f"{config.tie_word_embeddings=}")
         if config.tie_word_embeddings:
             self.lm_head = None  # will use embed_tokens.weight
         else:
@@ -373,6 +373,7 @@ class Gemma4ForCausalLM(nn.Module):
 
         kv_cache: dict = {}
         generated = input_ids.clone()
+        decode_times: list[float] = []
 
         for step in range(max_new_tokens):
             if step == 0:
@@ -384,6 +385,10 @@ class Gemma4ForCausalLM(nn.Module):
                 ids = generated[:, -1:]
                 pos = torch.tensor([[generated.shape[1] - 1]], device=ids.device)
 
+            # ── Timed forward pass ──────────────────────────────────
+            torch.cuda.synchronize()
+            t0 = time.perf_counter()
+
             logits = self(ids, position_ids=pos, kv_cache=kv_cache)
             next_logits = logits[:, -1, :]  # [batch, vocab]
 
@@ -394,10 +399,26 @@ class Gemma4ForCausalLM(nn.Module):
                 top_p=top_p,
             )
 
+            torch.cuda.synchronize()
+            elapsed = time.perf_counter() - t0
+
+            if step == 0:
+                prefill_time = elapsed
+                print(f"\nPrefill: {prefill_time * 1000:.1f} ms ({ids.shape[1]} tokens)")
+            else:
+                decode_times.append(elapsed)
+            # ────────────────────────────────────────────────────────
+
             generated = torch.cat([generated, next_token.unsqueeze(-1)], dim=-1)
 
             # Check EOS
             if next_token.item() in eos_token_ids:
                 break
+
+        # ── Print decode stats ──────────────────────────────────────
+        if decode_times:
+            avg_ms = sum(decode_times) / len(decode_times) * 1000
+            print(f"⏱  Decode:  {avg_ms:.1f} ms/token avg ({len(decode_times)} tokens)")
+            print(f"⏱  Decode throughput: {1000 / avg_ms:.1f} tok/s")
 
         return generated

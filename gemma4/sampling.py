@@ -22,9 +22,7 @@ def sample_top_k_top_p(
         # Greedy
         return logits.argmax(dim=-1)
 
-    print(f"{logits=}")
     logits = logits / temperature
-    print(f"{logits=}")
 
     # ── Top-k filtering ─────────────────────────────────────────────
     if top_k > 0:

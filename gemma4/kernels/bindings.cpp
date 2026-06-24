@@ -11,10 +11,17 @@
 // Forward-declare the wrapper function defined in vector_add.cu
 // (the linker will resolve this when combining the .o files)
 torch::Tensor vector_add(torch::Tensor a, torch::Tensor b);
-torch::Tensor rms_norm(torch::Tensor x, float eps, std::optional<torch::Tensor> weight);
+torch::Tensor rms_norm(torch::Tensor x, float eps,
+                       std::optional<torch::Tensor> weight);
+torch::Tensor apply_rope(torch::Tensor &x, torch::Tensor &cos,
+                         torch::Tensor &sin, torch::Tensor &pos_ids,
+                         float partial_rotary_factor);
 
 PYBIND11_MODULE(gemma4_kernels, m) {
   m.def("vector_add", &vector_add, "Element-wise vector addition (CUDA)");
-  m.def("rms_norm", &rms_norm, "RMS Norm (CUDA)",
-        pybind11::arg("x"), pybind11::arg("eps"), pybind11::arg("weight") = std::nullopt);
+  m.def("rms_norm", &rms_norm, "RMS Norm (CUDA)", pybind11::arg("x"),
+        pybind11::arg("eps"), pybind11::arg("weight") = std::nullopt);
+  m.def("apply_rope", &apply_rope, "Apply Rotary Embeddings (CUDA)",
+        pybind11::arg("x"), pybind11::arg("cos"), pybind11::arg("sin"),
+        pybind11::arg("position_ids"), pybind11::arg("partial_rotary_factor"));
 }

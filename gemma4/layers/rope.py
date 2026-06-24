@@ -9,6 +9,7 @@ Two variants:
 
 import torch
 import torch.nn as nn
+import gemma4_kernels
 
 
 class RotaryEmbedding(nn.Module):
@@ -83,6 +84,13 @@ def apply_rotary_emb(
     Returns:
         x with rotary embeddings applied, same shape as input.
     """
+    return gemma4_kernels.apply_rope(
+        x.contiguous(),
+        cos.contiguous(),
+        sin.contiguous(),
+        position_ids.contiguous(),
+        partial_rotary_factor,
+    )
     head_dim = x.shape[-1]
     rotary_dim = int(head_dim * partial_rotary_factor)
 

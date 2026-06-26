@@ -1,0 +1,3 @@
+-I/media/sln/codeit/projs/gemma4-e4b-4.5b/.venv/lib/python3.13/site-packages/torch/include
+-I/media/sln/codeit/projs/gemma4-e4b-4.5b/.venv/lib/python3.13/site-packages/torch/include/torch/csrc/api/include
+-I/home/sln/.local/share/uv/python/cpython-3.13.7-linux-x86_64-gnu/include/python3.13

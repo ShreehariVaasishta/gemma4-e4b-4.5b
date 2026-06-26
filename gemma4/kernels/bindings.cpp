@@ -17,6 +17,8 @@ torch::Tensor apply_rope(torch::Tensor &x, torch::Tensor &cos,
                          torch::Tensor &sin, torch::Tensor &pos_ids,
                          float partial_rotary_factor);
 
+torch::Tensor elementwise(torch::Tensor combined_in, int intermediate_size);
+
 PYBIND11_MODULE(gemma4_kernels, m) {
   m.def("vector_add", &vector_add, "Element-wise vector addition (CUDA)");
   m.def("rms_norm", &rms_norm, "RMS Norm (CUDA)", pybind11::arg("x"),
@@ -24,4 +26,6 @@ PYBIND11_MODULE(gemma4_kernels, m) {
   m.def("apply_rope", &apply_rope, "Apply Rotary Embeddings (CUDA)",
         pybind11::arg("x"), pybind11::arg("cos"), pybind11::arg("sin"),
         pybind11::arg("position_ids"), pybind11::arg("partial_rotary_factor"));
+  m.def("elementwise", &elementwise, "Elementwise GEMLU operation (CUDA)",
+        pybind11::arg("combined_in"), pybind11::arg("intermediate_size"));
 }

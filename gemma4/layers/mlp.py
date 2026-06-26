@@ -10,17 +10,25 @@ Architecture:
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import gemma4_kernels
 
 
 class GemmaMLP(nn.Module):
     def __init__(self, hidden_size: int, intermediate_size: int):
         super().__init__()
+        self.intermediate_size = intermediate_size
         self.gate_proj = nn.Linear(hidden_size, intermediate_size, bias=False)
         self.up_proj = nn.Linear(hidden_size, intermediate_size, bias=False)
         self.down_proj = nn.Linear(intermediate_size, hidden_size, bias=False)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
+        combined_weights = torch.cat([self.gate_proj.weight, self.up_proj.weight], dim=0)
+        combined_in = F.linear(x, combined_weights)
+
+        out = gemma4_kernels.elementwise(combined_in, self.intermediate_size)
+
+        return self.down_proj(out)
         # gelu_pytorch_tanh = GELU with tanh approximation
-        gate = F.gelu(self.gate_proj(x), approximate="tanh")
-        up = self.up_proj(x)
-        return self.down_proj(gate * up)
+        # gate = F.gelu(self.gate_proj(x), approximate="tanh")
+        # up = self.up_proj(x)
+        # return self.down_proj(gate * up)

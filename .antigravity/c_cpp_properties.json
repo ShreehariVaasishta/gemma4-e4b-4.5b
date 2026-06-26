@@ -1,0 +1,20 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/.venv/lib/python3.13/site-packages/torch/include",
+                "${workspaceFolder}/.venv/lib/python3.13/site-packages/torch/include/torch/csrc/api/include",
+                "/home/sln/.local/share/uv/python/cpython-3.13.7-linux-x86_64-gnu/include/python3.13",
+                "/opt/cuda/include"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "linux-gcc-x64"
+        }
+    ],
+    "version": 4
+}

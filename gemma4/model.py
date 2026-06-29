@@ -24,7 +24,7 @@ from gemma4.layers.norm import RMSNorm
 from gemma4.layers.mlp import GemmaMLP
 from gemma4.layers.attention import GemmaAttention
 from gemma4.layers.rope import RotaryEmbedding
-
+import gemma4_kernels
 
 # ────────────────────────────────────────────────────────────────────────────────
 # Per-Layer Embedding (PLE) Module
@@ -349,9 +349,7 @@ class Gemma4ForCausalLM(nn.Module):
 
         # Logit softcapping: tanh(logits / cap) * cap
         if self.final_logit_softcapping is not None and self.final_logit_softcapping > 0:
-            logits = logits / self.final_logit_softcapping
-            logits = torch.tanh(logits)
-            logits = logits * self.final_logit_softcapping
+            logits = gemma4_kernels.logit_soft_capping(logits, self.final_logit_softcapping)
 
         return logits
 

@@ -19,6 +19,9 @@ torch::Tensor apply_rope(torch::Tensor &x, torch::Tensor &cos,
 
 torch::Tensor elementwise(torch::Tensor combined_in, int intermediate_size);
 
+torch::Tensor logit_soft_capping(torch::Tensor logits,
+                                 float final_logit_softcapping);
+
 PYBIND11_MODULE(gemma4_kernels, m) {
   m.def("vector_add", &vector_add, "Element-wise vector addition (CUDA)");
   m.def("rms_norm", &rms_norm, "RMS Norm (CUDA)", pybind11::arg("x"),
@@ -28,4 +31,7 @@ PYBIND11_MODULE(gemma4_kernels, m) {
         pybind11::arg("position_ids"), pybind11::arg("partial_rotary_factor"));
   m.def("elementwise", &elementwise, "Elementwise GEMLU operation (CUDA)",
         pybind11::arg("combined_in"), pybind11::arg("intermediate_size"));
+
+  m.def("logit_soft_capping", &logit_soft_capping, "Logit soft capping (CUDA)",
+        pybind11::arg("logits"), pybind11::arg("final_logit_softcapping"));
 }

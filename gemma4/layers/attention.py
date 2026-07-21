@@ -12,7 +12,6 @@ Key details:
 
 from __future__ import annotations
 
-import math
 from typing import Optional
 
 import torch
@@ -22,6 +21,7 @@ import torch.nn.functional as F
 from gemma4.config import Gemma4Config
 from gemma4.layers.norm import RMSNorm
 from gemma4.layers.rope import apply_rotary_emb
+import gemma4_kernels
 
 
 class GemmaAttention(nn.Module):
@@ -32,12 +32,12 @@ class GemmaAttention(nn.Module):
 
         self.layer_type = config.layer_types[layer_idx]
         self.is_sliding = config.is_sliding(layer_idx)
-        
+
         # KV Sharing parameters
         self.is_kv_shared_layer = layer_idx >= config.kv_sharing_start_layer
-        
+
         # Find if we are the last non-shared layer of this type
-        prev_layers = config.layer_types[:config.kv_sharing_start_layer]
+        prev_layers = config.layer_types[: config.kv_sharing_start_layer]
         # Reverse find the last occurrence of self.layer_type in prev_layers
         if self.layer_type in prev_layers:
             last_idx = len(prev_layers) - 1 - prev_layers[::-1].index(self.layer_type)
@@ -75,7 +75,7 @@ class GemmaAttention(nn.Module):
         # ── Q/K/V projections ───────────────────────────────────────
         q = self.q_proj(hidden_states).view(batch_size, seq_len, self.num_heads, self.head_dim).transpose(1, 2)
         q = self.q_norm(q)
-        
+
         # Apply RoPE to Q
         partial = self.config.partial_rotary_factor if not self.is_sliding else 1.0
         q = apply_rotary_emb(q, cos, sin, position_ids, partial_rotary_factor=partial)
@@ -91,7 +91,7 @@ class GemmaAttention(nn.Module):
             k = self.k_norm(k)
             k = k.transpose(1, 2)
             k = apply_rotary_emb(k, cos, sin, position_ids, partial_rotary_factor=partial)
-            
+
             v = self.v_norm(v)
             v = v.transpose(1, 2)
 
@@ -112,19 +112,24 @@ class GemmaAttention(nn.Module):
             k = k.repeat_interleave(self.num_gqa_groups, dim=1)
             v = v.repeat_interleave(self.num_gqa_groups, dim=1)
 
-        # ── Attention ───────────────────────────────────────────────
-        attn_weights = torch.matmul(q, k.transpose(-2, -1))
+        # ── Attention (using our custom FlashAttention Kernel) ──────────
 
-        if attention_mask is not None:
-            attn_weights = attn_weights + attention_mask
+        # We need everything as FP32 because our educational kernel is FP32 only.
+        q_fp32 = q.to(torch.float32).contiguous()
+        k_fp32 = k.to(torch.float32).contiguous()
+        v_fp32 = v.to(torch.float32).contiguous()
 
-        attn_weights = F.softmax(attn_weights, dim=-1, dtype=torch.float32).to(v.dtype)
+        # Determine the sliding window size
+        # If it's a sliding layer, use the config's sliding window size. Otherwise use -1 to indicate global attention.
+        window_size = self.config.sliding_window if self.is_sliding else -1
 
-        attn_output = torch.matmul(attn_weights, v)
+        # Call the custom CUDA kernel
+        attn_output = gemma4_kernels.flash_attn(q_fp32, k_fp32, v_fp32, window_size)
+
+        # Convert back to the original datatype
+        attn_output = attn_output.to(v.dtype)
         # [batch, num_heads, seq_len, head_dim]
 
-        attn_output = attn_output.transpose(1, 2).contiguous().view(
-            batch_size, seq_len, self.num_heads * self.head_dim
-        )
+        attn_output = attn_output.transpose(1, 2).contiguous().view(batch_size, seq_len, self.num_heads * self.head_dim)
 
         return self.o_proj(attn_output)

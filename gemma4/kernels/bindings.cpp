@@ -22,6 +22,11 @@ torch::Tensor elementwise(torch::Tensor combined_in, int intermediate_size);
 torch::Tensor logit_soft_capping(torch::Tensor logits,
                                  float final_logit_softcapping);
 
+torch::Tensor gemma4_decode_layer_ple_inj(torch::Tensor pre_gate,
+                                          torch::Tensor per_layer_input);
+
+torch::Tensor flash_attn(torch::Tensor q, torch::Tensor k, torch::Tensor v, int sliding_window_size);
+
 PYBIND11_MODULE(gemma4_kernels, m) {
   m.def("vector_add", &vector_add, "Element-wise vector addition (CUDA)");
   m.def("rms_norm", &rms_norm, "RMS Norm (CUDA)", pybind11::arg("x"),
@@ -34,4 +39,12 @@ PYBIND11_MODULE(gemma4_kernels, m) {
 
   m.def("logit_soft_capping", &logit_soft_capping, "Logit soft capping (CUDA)",
         pybind11::arg("logits"), pybind11::arg("final_logit_softcapping"));
+
+  m.def("gemma4_decode_layer_ple_inj", &gemma4_decode_layer_ple_inj,
+        "Gemma4 Decode Layer PLE Injection (CUDA)", pybind11::arg("pre_gate"),
+        pybind11::arg("per_layer_input"));
+
+  m.def("flash_attn", &flash_attn,
+        "Educational FlashAttention Kernel (CUDA)", pybind11::arg("q"),
+        pybind11::arg("k"), pybind11::arg("v"), pybind11::arg("sliding_window_size"));
 }

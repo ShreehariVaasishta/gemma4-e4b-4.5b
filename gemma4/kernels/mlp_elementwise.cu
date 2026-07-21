@@ -1,15 +1,6 @@
-#include "torch/types.h"
-#include <cmath>
+#include "gelu_tanh.cuh"
 #include <cuda_runtime.h>
 #include <torch/extension.h>
-
-__device__ float gelu_tanh(float x) {
-  // Pre-calculated constant for sqrt(2/pi)
-  const float sqrt_2_over_pi = 0.79788456f;
-  const float coef = 0.044715f;
-
-  return 0.5 * x * (1.0f + tanhf(sqrt_2_over_pi * (x + coef * x * x * x)));
-}
 
 __global__ void elementwise_kernel(const float *__restrict__ x,
                                    float *__restrict__ out,
